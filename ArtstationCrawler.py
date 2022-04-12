@@ -6,14 +6,13 @@ from pymongo import MongoClient
 url_component1 = "https://www.artstation.com/api/v2/community/explore/projects/trending.json?page="
 url_page = 1
 url_component2 = "&dimension=all&per_page=10"
-component1 = "https://www.artstation.com/projects/"
-component2 = ".json"
+
+tag_component1 = "https://www.artstation.com/projects/"
+tag_component2 = ".json"
 
 # url = "https://www.artstation.com/projects.json?page=1&sorting=trending"
 # https://www.artstation.com/api/v2/community/explore/projects/trending.json?page=1&dimension=all&per_page=10
 
-tag_component1 = "https://www.artstation.com/projects/"
-tag_component2 = ".json"
 
 # tag 所在
 # https://www.artstation.com/projects/DAOOxe.json
@@ -35,9 +34,10 @@ client = MongoClient('mongodb://root:123456@localhost:27017/')
 db = client['test']
 img_collection = db['image']
 user_collection = db['user']
+tags_collection = db['tags']
 
 
-class img:
+class Img:
     def __init__(self, JSON):
         self.hash_id = JSON['hash_id']
         self.url = JSON['url']
@@ -55,7 +55,7 @@ class img:
         }
 
 
-class user:
+class User:
     def __init__(self, JSON):
         self.username = JSON['username']
         self.medium_avatar_url = JSON['medium_avatar_url']
@@ -79,6 +79,20 @@ class user:
         }
 
 
+class Tags:
+    def __init__(self, JSON):
+        self.tags = JSON['tags']
+        self.medium = JSON['medium']
+        self.mediums = JSON['mediums']
+
+    def toDict(self):
+        return {
+            'tags': self.tags,
+            'medium': self.medium,
+            'mediums': self.mediums,
+        }
+
+
 while url_page <= 1:
     url = url_component1 + str(url_page) + url_component2
     # url = "https://www.baidu.com"
@@ -96,19 +110,22 @@ while url_page <= 1:
     # 原来可以 直接 insert_many 识别格式，多写了
     imgSlice = []
     userSlice = []
+    tagsSlice = []
     for i in range(0, 10):
         print(i)
-        imgSlice.append(img(data[i]).toDict())
-        userSlice.append(user(userSlice[i]['user']).toDict())
+        imgSlice.append(Img(data[i]).toDict())
+        userSlice.append(User(data[i]['user']).toDict())
+
+        tag_url = tag_component1 + data[i]['hash_id'] + tag_component2
+        tag_data = requests.get(tag_url, headers=headers, timeout=10,
+                                proxies={"https": "http://172.22.224.1:7890", }).json()
+        tagsSlice.append(Tags(tag_data).toDict())
 
     # print(imgSlice)
-
 
     # 插入多个
     img_collection.insert_many(imgSlice)
     user_collection.insert_many(userSlice)
-    # user_collection.insert_one(user_data)
-
-    # 导入 tag
+    tags_collection.insert_many(tagsSlice)
 
     url_page += 1

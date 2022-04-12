@@ -11,6 +11,11 @@ component2 = ".json"
 
 # url = "https://www.artstation.com/projects.json?page=1&sorting=trending"
 # https://www.artstation.com/api/v2/community/explore/projects/trending.json?page=1&dimension=all&per_page=10
+
+tag_component1 = "https://www.artstation.com/projects/"
+tag_component2 = ".json"
+
+# tag 所在
 # https://www.artstation.com/projects/DAOOxe.json
 # tags 本身有 tag
 # categories 里包含tag
@@ -31,6 +36,49 @@ db = client['test']
 img_collection = db['image']
 user_collection = db['user']
 
+
+class img:
+    def __init__(self, JSON):
+        self.hash_id = JSON['hash_id']
+        self.url = JSON['url']
+        self.hide_as_adult = JSON['hide_as_adult']
+        self.smaller_square_cover_url = JSON['smaller_square_cover_url']
+        self.title = JSON['title']
+
+    def toDict(self):
+        return {
+            'hash_id': self.hash_id,
+            'url': self.url,
+            'hide_as_adult': self.hide_as_adult,
+            'smaller_square_cover_url': self.smaller_square_cover_url,
+            'title': self.title,
+        }
+
+
+class user:
+    def __init__(self, JSON):
+        self.username = JSON['username']
+        self.medium_avatar_url = JSON['medium_avatar_url']
+        self.is_staff = JSON['is_staff']
+        self.pro_member = JSON['pro_member']
+        self.is_plus_member = JSON['is_plus_member']
+        self.is_studio_account = JSON['is_studio_account']
+        self.is_school_account = JSON['is_school_account']
+        self.full_name = JSON['full_name']
+
+    def toDict(self):
+        return {
+            'username': self.username,
+            'medium_avatar_url': self.medium_avatar_url,
+            'is_staff': self.is_staff,
+            'pro_member': self.pro_member,
+            'is_plus_member': self.is_plus_member,
+            'is_studio_account': self.is_studio_account,
+            'is_school_account': self.is_school_account,
+            'full_name': self.full_name,
+        }
+
+
 while url_page <= 1:
     url = url_component1 + str(url_page) + url_component2
     # url = "https://www.baidu.com"
@@ -42,36 +90,25 @@ while url_page <= 1:
     # 网页返回的数据
     raw_json = resp.json()
     data = raw_json['data']
+
     # print(len(data))
 
     # 原来可以 直接 insert_many 识别格式，多写了
-    # for i in range(1, 100):
-        ## 图像数据
-        # img_data = {'id': data[i]['id'],
-        #             'hash_id': data[i]['hash_id'],
-        #             'url': data[i]['url'],
-        #             "smaller_square_cover_url": data[i]['smaller_square_cover_url'],
-        #             "title": data[i]['title'],
-        #             "hide_as_adult": data[i]['hide_as_adult'],
-        #             }
+    imgSlice = []
+    userSlice = []
+    for i in range(0, 10):
+        print(i)
+        imgSlice.append(img(data[i]).toDict())
+        userSlice.append(user(userSlice[i]['user']).toDict())
+
+    # print(imgSlice)
+
 
     # 插入多个
-    img_collection.insert_many(data)
+    img_collection.insert_many(imgSlice)
+    user_collection.insert_many(userSlice)
+    # user_collection.insert_one(user_data)
 
-        # # user 数据
-        # user_data = {
-        #     "id": data[i]['user']['id'],
-        #     "username": data[i]['user']['username'],
-        #     "medium_avatar_url": data[i]['user']['medium_avatar_url'],
-        #     "is_staff": data[i]['user']['is_staff'],
-        #     "pro_member": data[i]['user']['pro_member'],
-        #     "is_plus_member": data[i]['user']['is_plus_member'],
-        #     "is_studio_account": data[i]['user']['is_studio_account'],
-        #     "is_school_account": data[i]['user']['is_school_account'],
-        #     "full_name": data[i]['user']['full_name'],
-        # }
-        # user_collection.insert_one(user_data)
-
-
+    # 导入 tag
 
     url_page += 1
